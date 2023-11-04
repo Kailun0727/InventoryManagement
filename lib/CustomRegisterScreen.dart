@@ -4,6 +4,8 @@ import 'package:crypto/crypto.dart';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class CustomRegisterScreen extends StatefulWidget {
   @override
@@ -17,6 +19,12 @@ class _CustomRegisterScreenState extends State<CustomRegisterScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  String hashPassword(String password) {
+    final passwordBytes = utf8.encode(password);
+    final hashedPassword = sha256.convert(passwordBytes).toString();
+    return hashedPassword;
+  }
 
   String? _emailValidator(String? value) {
     if (value == null || value.isEmpty) {
@@ -48,11 +56,24 @@ class _CustomRegisterScreenState extends State<CustomRegisterScreen> {
   Future<void> _registerWithEmailAndPassword() async {
     if (_formKey.currentState!.validate()) {
       try {
+        // Hash the password with SHA-256
+        final hashedPassword = hashPassword(_passwordController.text);
+
+        // Create a user in Firebase Authentication
         await _auth.createUserWithEmailAndPassword(
           email: _emailController.text,
-          password: _passwordController.text,
+          password: hashedPassword,
         );
 
+        FirebaseFirestore db = FirebaseFirestore.instance;
+
+        final data = {
+          "email": _emailController.text,
+          "password": hashedPassword,
+          "role" : "admin"
+        };
+
+        db.collection("user").doc().set(data);
 
         // Successful registration logic
         Navigator.pushReplacementNamed(context, '/home');
