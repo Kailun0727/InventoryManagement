@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:inventory_management/admin_home_page.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 import 'Item.dart';
 
@@ -89,6 +90,10 @@ class _AdminUpdateItemPageState extends State<AdminUpdateItemPage> {
         itemAmount.text.isNotEmpty;
   }
 
+  Uint8List generateKey() {
+    return Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
+  }
+
   void deleteItem(String id) {
     showDialog(
       context: context,
@@ -109,18 +114,8 @@ class _AdminUpdateItemPageState extends State<AdminUpdateItemPage> {
                     onPressed: () async {
                       //function to delete an item
                       try {
-                        //query for documents
-                        QuerySnapshot querySnapshot = await itemCollection
-                            .where('itemName', isEqualTo: widget.item.itemName)
-                            .get();
-
                         //perform delete menu item actions
-                        for (QueryDocumentSnapshot document
-                        in querySnapshot.docs) {
-                          await itemCollection.doc(document.id).delete();
-                        }
-
-                        print('${widget.item.itemName} deleted successfully! ');
+                        await itemCollection.doc(id).delete();
                       } catch (e) {
                         print('Error deleting item. : $e');
                       }
@@ -132,7 +127,9 @@ class _AdminUpdateItemPageState extends State<AdminUpdateItemPage> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const AdminHomePage()));
+                              builder: (context) => const AdminHomePage()
+                          )
+                      );
                     },
                     child: const Text(
                       'Delete',
@@ -178,12 +175,22 @@ class _AdminUpdateItemPageState extends State<AdminUpdateItemPage> {
                             String itemAmount,
                             ) async {
                           try {
+                            final keyValues = generateKey();
+                            final key = encrypt.Key(keyValues);
+                            final iv = encrypt.IV.fromLength(16);
+                            final encrypter = encrypt.Encrypter(encrypt.AES(key));
+
+                            final encryptedItemName = encrypter.encrypt(itemName, iv: iv);
+                            final encryptedItemDescription = encrypter.encrypt(itemDescription, iv: iv);
+                            final encryptedItemImage = encrypter.encrypt(itemImage, iv: iv);
+                            final encryptedItemAmount = encrypter.encrypt(itemAmount, iv: iv);
+
                             //find the matching item and update the status
                             await itemCollection.doc(widget.item.id).update({
-                              'itemName': itemName,
-                              'itemDescription': itemDescription,
-                              'itemImage': itemImage,
-                              'itemAmount': itemAmount,
+                              'itemName': encryptedItemName.base64,
+                              'itemDescription': encryptedItemDescription.base64,
+                              'itemImage': encryptedItemImage.base64,
+                              'itemAmount': encryptedItemAmount.base64,
                             });
 
                             print('Item updated successfully.');
@@ -242,7 +249,7 @@ class _AdminUpdateItemPageState extends State<AdminUpdateItemPage> {
                   children: <Widget>[
                     Center(
                       child: Text(
-                        'Add New Item',
+                        'Update Item',
                         style: TextStyle(
                           fontSize: 24.0, // Adjust the font size as needed
                           fontWeight: FontWeight.bold,

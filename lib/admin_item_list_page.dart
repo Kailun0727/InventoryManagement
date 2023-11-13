@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:inventory_management/Item.dart';
 import 'package:inventory_management/admin_update_item.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 class AdminItemListPage extends StatefulWidget {
   const AdminItemListPage({Key? key}) : super(key: key);
@@ -13,6 +15,10 @@ class AdminItemListPage extends StatefulWidget {
 class _AdminItemListPageState extends State<AdminItemListPage> {
   CollectionReference itemCollection =
   FirebaseFirestore.instance.collection('item');
+
+  Uint8List generateKey() {
+    return Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,23 +61,37 @@ class _AdminItemListPageState extends State<AdminItemListPage> {
 
                   //use ?. to safely access docs property
                   final docs = snapshot.data?.docs;
+                  final keyValues = generateKey();
+                  final key = encrypt.Key(keyValues);
+                  final iv = encrypt.IV.fromLength(16);
+                  final encrypter = encrypt.Encrypter(encrypt.AES(key));
 
                   if(docs == null || docs.isEmpty){
-                    return const Text('No data available'); //handle case where no documents are retrieved
+                    return Center(child: const Text('No data available')); //handle case where no documents are retrieved
                   }
 
                   //call Item from cloud Firestore
                   List<Item> itemList = []; //call the Item model class
                   docs.forEach((doc) {
+                    final encryptedItemName = encrypt.Encrypted.fromBase64(doc['itemName']);
+                    final encryptedItemDescription = encrypt.Encrypted.fromBase64(doc['itemDescription']);
+                    final encryptedItemImage = encrypt.Encrypted.fromBase64(doc['itemImage']);
+                    final encryptedItemAmount = encrypt.Encrypted.fromBase64(doc['itemAmount']);
+
+                    final decryptedItemName = encrypter.decrypt(encryptedItemName, iv: iv);
+                    final decryptedItemDescription = encrypter.decrypt(encryptedItemDescription, iv: iv);
+                    final decryptedItemImage = encrypter.decrypt(encryptedItemImage, iv: iv);
+                    final decryptedItemAmount = encrypter.decrypt(encryptedItemAmount, iv: iv);
                     //create a Item object using documents stored in Firestore
                     Item item = Item(
                       id: doc.id,
-                      itemName: doc['itemName'],
-                      itemDescription: doc['itemDescription'],
-                      itemImage: doc['itemImage'],
-                      itemAmount: doc['itemAmount'].toString(),
+                      itemName: decryptedItemName,
+                      itemDescription: decryptedItemDescription,
+                      itemImage: decryptedItemImage,
+                      itemAmount: decryptedItemAmount,
                     );
                     itemList.add(item);
+
                   });
 
                   return ListView.builder(

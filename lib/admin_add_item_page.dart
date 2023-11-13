@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/services.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 class AdminAddItemPage extends StatefulWidget {
   const AdminAddItemPage({Key? key}) : super(key: key);
@@ -36,6 +37,10 @@ class _AdminAddItemPageState extends State<AdminAddItemPage> {
     );
   }
 
+  Uint8List generateKey() {
+    return Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
+  }
+
   //function to create an item
   Future<void> createItem(
       String itemName,
@@ -53,13 +58,31 @@ class _AdminAddItemPageState extends State<AdminAddItemPage> {
         showSnackBar(context,
             'Item already exist. ');
       } else {
+        final keyValues = generateKey();
+        final key = encrypt.Key(keyValues);
+        final iv = encrypt.IV.fromLength(16);
+        final encrypter = encrypt.Encrypter(encrypt.AES(key));
+
+        final encryptedItemName = encrypter.encrypt(itemName, iv: iv);
+        final encryptedItemDescription = encrypter.encrypt(itemDescription, iv: iv);
+        final encryptedItemImage = encrypter.encrypt(itemImage, iv: iv);
+        final encryptedItemAmount = encrypter.encrypt(itemAmount, iv: iv);
+
         //create new item
         await itemCollection.add({
-          'itemName': itemName,
-          'itemDescription': itemDescription,
-          'itemImage': itemImage,
-          'itemAmount': itemAmount,
+          'itemName': encryptedItemName.base64,
+          'itemDescription': encryptedItemDescription.base64,
+          'itemImage': encryptedItemImage.base64,
+          'itemAmount': encryptedItemAmount.base64,
         });
+
+        // final data = {
+        //   'itemName': encryptedItemName.base64,
+        //   'itemDescription': encryptedItemDescription.base64,
+        //   'itemImage': encryptedItemImage.base64,
+        //   'itemAmount': encryptedItemAmount.base64,
+        // };
+
 
         showSnackBar(context,
             'Item added successfully!');
