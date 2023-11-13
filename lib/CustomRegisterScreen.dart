@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:flutter/foundation.dart';
+
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -53,30 +56,45 @@ class _CustomRegisterScreenState extends State<CustomRegisterScreen> {
     return null;
   }
 
+  Uint8List generateKey() {
+    return Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
+  }
+
   Future<void> _registerWithEmailAndPassword() async {
     if (_formKey.currentState!.validate()) {
       try {
         // Hash the password with SHA-256
         final hashedPassword = hashPassword(_passwordController.text);
 
+        final keyValues = generateKey();
+        final key = encrypt.Key(keyValues);
+        final iv = encrypt.IV.fromLength(16);
+        final encrypter = encrypt.Encrypter(encrypt.AES(key));
+        final encryptedEmail = encrypter.encrypt(_emailController.text, iv: iv);
+
         // Create a user in Firebase Authentication
-        await _auth.createUserWithEmailAndPassword(
-          email: _emailController.text,
+        final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+          email: _emailController.text.toString(),
           password: hashedPassword,
         );
 
-        FirebaseFirestore db = FirebaseFirestore.instance;
+        final User? user = userCredential.user;
 
-        final data = {
-          "email": _emailController.text,
-          "password": hashedPassword,
-          "role" : "admin"
-        };
+        if (user != null) {
+          FirebaseFirestore db = FirebaseFirestore.instance;
 
-        db.collection("user").doc().set(data);
+          final data = {
+            "email": encryptedEmail.base64,
+            "password": hashedPassword,
+            "role": "user",
+          };
 
-        // Successful registration logic
-        Navigator.pushReplacementNamed(context, '/home');
+          // Set the user ID as the document ID
+          await db.collection("user").doc(user.uid).set(data);
+
+          // Successful registration logic
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       } catch (e) {
         // Handle registration error and display a message to the user
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,7 +1,11 @@
 
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -43,11 +47,17 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
     return null;
   }
 
+  Uint8List generateKey() {
+    return Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
+  }
+
+
   Future<void> _signInWithEmailAndPassword() async {
     try {
       // Hash the password with SHA-256
       final hashedPassword = hashPassword(_passwordController.text);
 
+      // Sign in with email and hashed password
       await _auth.signInWithEmailAndPassword(
         email: _emailController.text,
         password: hashedPassword,
@@ -55,11 +65,40 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
 
       final user = FirebaseAuth.instance.currentUser;
 
-      if(user!=null) {
-        // Navigate to the home page on successful login
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      if (user != null) {
+        // Retrieve user data from Firestore
+        DocumentSnapshot userData = await FirebaseFirestore.instance.collection("user").doc(user.uid).get();
 
+        if (userData.exists) {
+          // Check the user's role
+          String role = userData['role'];
+
+          String email = userData['email'];
+
+          final keyValues = generateKey();
+          final key = encrypt.Key(keyValues);
+          final iv = encrypt.IV.fromLength(16);
+          final encrypter = encrypt.Encrypter(encrypt.AES(key));
+
+          final encryptedEmail = encrypt.Encrypted.fromBase64(email);
+
+          final decryptedEmail = encrypter.decrypt(encryptedEmail, iv: iv);
+
+          print("Original data in database : "+ email);
+          print("After decrypt : " +decryptedEmail);
+
+
+          // Redirect based on the user's role
+          if (role == 'admin') {
+            Navigator.pushReplacementNamed(context, '/admin-home');
+          } else {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        } else {
+          // Handle the case where user data does not exist
+          print("User data not found");
+        }
+      }
     } catch (e) {
       // Handle login error and display a message to the user
       ScaffoldMessenger.of(context).showSnackBar(

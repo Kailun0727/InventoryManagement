@@ -3,6 +3,7 @@ import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inventory_management/CustomLoginScreen.dart';
 import 'package:inventory_management/CustomRegisterScreen.dart';
+import 'package:inventory_management/admin_home_page.dart';
 import 'package:inventory_management/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:inventory_management/home_page.dart';
@@ -39,6 +40,7 @@ class _MyAppState extends State<MyApp> {
         '/register': (context) => CustomRegisterScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
         '/home' : (context) =>  HomePage(),
+        '/admin-home' : (context) =>  AdminHomePage(),
       },
 
     );
