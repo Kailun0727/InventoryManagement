@@ -17,7 +17,6 @@ class CustomLoginScreen extends StatefulWidget {
 }
 
 class _CustomLoginScreenState extends State<CustomLoginScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // TextEditingController for email and password input fields
   final TextEditingController _emailController = TextEditingController();
@@ -54,61 +53,57 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
 
   Future<void> _signInWithEmailAndPassword() async {
     try {
+      // Generate key and encrypter
+      final keyValues = generateKey();
+      final key = encrypt.Key(keyValues);
+      final iv = encrypt.IV.fromLength(16);
+      final encrypter = encrypt.Encrypter(encrypt.AES(key));
+
+
+      final encryptedEmail = encrypter.encrypt(_emailController.text, iv: iv);
+
+      final base64Email = encryptedEmail.base64;
+
       // Hash the password with SHA-256
       final hashedPassword = hashPassword(_passwordController.text);
 
-      // Sign in with email and hashed password
-      await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: hashedPassword,
-      );
+      // Retrieve user data from Firestore
+      QuerySnapshot userData = await FirebaseFirestore.instance.collection("user")
+          .where('email', isEqualTo: base64Email)
+          .where('password', isEqualTo: hashedPassword)
+          .get();
 
-      final user = FirebaseAuth.instance.currentUser;
+      if (userData.docs.isNotEmpty) {
+        // Check the user's role
+        String role = userData.docs.first['role'];
 
-      if (user != null) {
-        // Retrieve user data from Firestore
-        DocumentSnapshot userData = await FirebaseFirestore.instance.collection("user").doc(user.uid).get();
-
-        if (userData.exists) {
-          // Check the user's role
-          String role = userData['role'];
-
-          String email = userData['email'];
-
-          final keyValues = generateKey();
-          final key = encrypt.Key(keyValues);
-          final iv = encrypt.IV.fromLength(16);
-          final encrypter = encrypt.Encrypter(encrypt.AES(key));
-
-          final encryptedEmail = encrypt.Encrypted.fromBase64(email);
-
-          final decryptedEmail = encrypter.decrypt(encryptedEmail, iv: iv);
-
-          print("Original data in database : "+ email);
-          print("After decrypt : " +decryptedEmail);
-
-
-          // Redirect based on the user's role
-          if (role == 'admin') {
-            Navigator.pushReplacementNamed(context, '/admin-home');
-          } else {
-            Navigator.pushReplacementNamed(context, '/home');
-          }
+        // Redirect based on the user's role
+        if (role == 'admin') {
+          Navigator.pushReplacementNamed(context, '/admin-home');
         } else {
-          // Handle the case where user data does not exist
-          print("User data not found");
+          Navigator.pushReplacementNamed(context, '/home');
         }
+      } else {
+        // Handle the case where user data does not exist
+        print("User data not found");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Invalid email or password"),
+          ),
+        );
       }
     } catch (e) {
       // Handle login error and display a message to the user
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Invalid email or password"),
+          content: Text("Login error: $e"),
         ),
       );
       print("Login error: $e");
     }
   }
+
+
 
   void _navigateToRegisterScreen() {
     Navigator.pushNamed(context, '/register');

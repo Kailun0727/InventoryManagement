@@ -226,7 +226,7 @@ class _AdminUpdateUserPageState extends State<AdminUpdateUserPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +275,7 @@ class _AdminUpdateUserPageState extends State<AdminUpdateUserPage> {
                       obscureText: true, // Hide password characters
                     ),
                     const SizedBox(height: 16),
-                    const Row(
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(

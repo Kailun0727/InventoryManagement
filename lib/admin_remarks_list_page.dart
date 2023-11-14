@@ -57,6 +57,9 @@ class _AdminRemarksListPageState extends State<AdminRemarksListPage> {
                             'remarkStatus': 'checked',
                           });
 
+
+                          Navigator.pop(context);
+
                           print('Remark status updated successfully.');
                         } catch (e) {
                           print('Error updating item. $e');
@@ -89,7 +92,7 @@ class _AdminRemarksListPageState extends State<AdminRemarksListPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

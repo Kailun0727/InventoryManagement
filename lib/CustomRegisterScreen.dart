@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
 
 class CustomRegisterScreen extends StatefulWidget {
@@ -16,7 +17,6 @@ class CustomRegisterScreen extends StatefulWidget {
 }
 
 class _CustomRegisterScreenState extends State<CustomRegisterScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -72,29 +72,24 @@ class _CustomRegisterScreenState extends State<CustomRegisterScreen> {
         final encrypter = encrypt.Encrypter(encrypt.AES(key));
         final encryptedEmail = encrypter.encrypt(_emailController.text, iv: iv);
 
-        // Create a user in Firebase Authentication
-        final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-          email: _emailController.text.toString(),
-          password: hashedPassword,
-        );
 
-        final User? user = userCredential.user;
+        var uuid = Uuid();
+        String randomUid = uuid.v4();
 
-        if (user != null) {
-          FirebaseFirestore db = FirebaseFirestore.instance;
+        FirebaseFirestore db = FirebaseFirestore.instance;
 
-          final data = {
-            "email": encryptedEmail.base64,
-            "password": hashedPassword,
-            "role": "user",
-          };
+        final data = {
+          "email": encryptedEmail.base64,
+          "password": hashedPassword,
+          "role": "user",
+        };
 
-          // Set the user ID as the document ID
-          await db.collection("user").doc(user.uid).set(data);
+        // Set the user ID as the document ID
+        await db.collection("user").doc(randomUid).set(data);
 
-          // Successful registration logic
-          Navigator.pushReplacementNamed(context, '/home');
-        }
+        // Successful registration logic
+        Navigator.pushReplacementNamed(context, '/home');
+
       } catch (e) {
         // Handle registration error and display a message to the user
         ScaffoldMessenger.of(context).showSnackBar(
