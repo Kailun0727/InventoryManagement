@@ -73,7 +73,7 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
                   }
 
                   //call User from cloud Firestore
-                  List<User> userList = []; //call the Item model class
+                  List<User> userList = []; //call the User model class
                   docs.forEach((doc) {
                     final encryptedEmail = encrypt.Encrypted.fromBase64(doc['email']);
 
