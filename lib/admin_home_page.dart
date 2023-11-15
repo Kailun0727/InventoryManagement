@@ -25,24 +25,22 @@ class _AdminHomePageState extends State<AdminHomePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to log out?'),
-          actions: <Widget>[
+          title: Text('Logout'),
+          content: Text('Are you sure you want to logout?'),
+          actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
               },
-              child: const Text('No'),
+              child: Text('Cancel'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => CustomLoginScreen()),
-                      (route) => false, // Remove all routes from the stack
-                );
+                // Perform logout
+                // Navigate to the sign-in page and prevent going back
+                Navigator.of(context).pushNamedAndRemoveUntil('/sign-in', (Route<dynamic> route) => false);
               },
-              child: const Text('Yes'),
+              child: Text('Logout'),
             ),
           ],
         );
@@ -72,7 +70,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 icon: Icon(Icons.add),
               ),
               IconButton(
-                icon: Icon(Icons.exit_to_app),
+                icon: Icon(Icons.logout),
                 onPressed: () {
                   // Show the logout confirmation dialog
                   _showLogoutDialog();
