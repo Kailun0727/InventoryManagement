@@ -88,8 +88,7 @@ class _CustomRegisterScreenState extends State<CustomRegisterScreen> {
         await db.collection("user").doc(randomUid).set(data);
 
         // Successful registration logic
-        Navigator.pushReplacementNamed(context, '/home');
-
+        Navigator.pushReplacementNamed(context, '/sign-in');
       } catch (e) {
         // Handle registration error and display a message to the user
         ScaffoldMessenger.of(context).showSnackBar(

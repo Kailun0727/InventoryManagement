@@ -5,12 +5,33 @@ import 'package:flutter/services.dart';
 import 'Item.dart';
 
 class ItemPage extends StatefulWidget {
+  final Object? userData;
+
+  const ItemPage({Key? key, this.userData}) : super(key: key);
+
   @override
   _ItemPageState createState() => _ItemPageState();
 }
 
 class _ItemPageState extends State<ItemPage> {
   CollectionReference itemCollection = FirebaseFirestore.instance.collection('item');
+  CollectionReference remarkCollection = FirebaseFirestore.instance.collection('remark');
+  Object? userData;
+
+  String _getUserEmail(Object? userData) {
+    if (userData != null && userData is Map<String, dynamic>) {
+      // Assuming 'email' is the key for the user email in userData
+      return userData['email'] ?? 'DEFAULT_EMAIL';
+    }
+    return 'DEFAULT_EMAIL';
+  }
+
+
+  @override
+  void initState(){
+    super.initState();
+    userData = widget.userData;
+  }
 
   Uint8List generateKey() {
     return Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
@@ -59,6 +80,65 @@ class _ItemPageState extends State<ItemPage> {
       },
     );
   }
+
+  void _addRemark() {
+    TextEditingController _remarkController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Add Remark'),
+          content: TextField(
+            controller: _remarkController,
+            decoration: InputDecoration(labelText: 'Enter your remark'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Extract user email from userData
+                String userEmail = _getUserEmail(userData);
+
+                // Perform the action with the entered remark
+                String remarkMessage = _remarkController.text;
+                DateTime now = DateTime.now();
+                String remarkTime = now.toLocal().toString();
+
+                // Encrypt data
+                final keyValues = generateKey();
+                final key = encrypt.Key(keyValues);
+                final iv = encrypt.IV.fromLength(16);
+                final encrypter = encrypt.Encrypter(encrypt.AES(key));
+
+                final encryptedRemarkMessage = encrypter.encrypt(remarkMessage, iv: iv);
+                final encryptedRemarkTime = encrypter.encrypt(remarkTime, iv: iv);
+                //final encryptedUserId = encrypter.encrypt(userEmail, iv: iv);
+
+                // Save the remark to Firebase
+                await remarkCollection.add({
+                  'remarkMessage': encryptedRemarkMessage.base64,
+                  'remarkStatus': 'unchecked', // Initial status is unchecked
+                  'remarkTime': encryptedRemarkTime.base64,
+                  'remarkUser':userEmail,
+                });
+
+                // Close the dialog
+                Navigator.of(context).pop();
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -204,11 +284,10 @@ class _ItemPageState extends State<ItemPage> {
                                 'itemAmount': encrypter.encrypt(remainingQuantity.toString(), iv: iv).base64,
                               });
 
-                              // Reset the input field to 0 after successful collection
+                              // Reset the input field to empty after successful collection
                               setState(() {
                                 _amountController.text = ''; // Clear the controller's text
                               });
-
 
                               // Show a success Snackbar or perform additional actions
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -229,6 +308,13 @@ class _ItemPageState extends State<ItemPage> {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _addRemark();
+        },
+        tooltip: 'Add Remark',
+        child: Icon(Icons.add),
       ),
     );
   }

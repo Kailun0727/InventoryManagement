@@ -3,25 +3,37 @@ import 'package:inventory_management/user_item_page.dart';
 import 'package:inventory_management/user_remark_page.dart';
 
 class UserHomePage extends StatefulWidget {
-  const UserHomePage({Key? key}) : super(key: key);
+  final Object? userData;
+
+  const UserHomePage({Key? key, this.userData}) : super(key: key);
 
   @override
   State<UserHomePage> createState() => _UserHomePageState();
 }
 
 class _UserHomePageState extends State<UserHomePage> {
+  Object? userData;
   int _currentIndex = 0; // Index of the selected tab
+  List<Widget>? pages;
+
+  @override
+  void initState() {
+    super.initState();
+    userData = widget.userData;
+  }
 
   // List of pages to be displayed in the bottom navigation bar
-  final List<Widget> _pages = [
-    ItemPage(),    // Replace with your ItemPage widget
-    RemarkPage(),  // Replace with your RemarkPage widget
-  ];
+
 
   @override
   Widget build(BuildContext context) {
+    pages = [
+      ItemPage(userData: userData),    // Replace with your ItemPage widget
+      RemarkPage(userData: userData),  // Replace with your RemarkPage widget
+    ];
+
     return Scaffold(
-      body: _pages[_currentIndex], // Display the selected page
+      body: pages?[_currentIndex], // Display the selected page
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
