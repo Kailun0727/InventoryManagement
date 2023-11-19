@@ -78,7 +78,7 @@ class _RemarkPageState extends State<RemarkPage> {
                 final encrypter = encrypt.Encrypter(encrypt.AES(key));
 
                 final encryptedEditedRemarkMessage = encrypter.encrypt(editedRemarkMessage, iv: iv);
-                final encryptedEditedRemarkTime = encrypter.encrypt(DateFormat.jm().format(DateTime.now()), iv: iv);
+                final encryptedEditedRemarkTime = encrypter.encrypt(DateFormat('yyyy/MM/dd hh:mm a').format(DateTime.now().toLocal()), iv: iv);
 
 
                 // Save the edited remark to Firebase

@@ -109,7 +109,7 @@ class _ItemPageState extends State<ItemPage> {
                 // Perform the action with the entered remark
                 String remarkMessage = _remarkController.text;
                 DateTime now = DateTime.now();
-                String remarkTime = DateFormat.jm().format(now);
+                String remarkTime = DateFormat('yyyy/MM/dd hh:mm a').format(now.toLocal());
 
                 // Encrypt data
                 final keyValues = generateKey();
