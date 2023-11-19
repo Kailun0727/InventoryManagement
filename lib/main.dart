@@ -6,7 +6,7 @@ import 'package:inventory_management/CustomRegisterScreen.dart';
 import 'package:inventory_management/admin_home_page.dart';
 import 'package:inventory_management/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:inventory_management/home_page.dart';
+import 'package:inventory_management/user_home_page.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +39,7 @@ class _MyAppState extends State<MyApp> {
         '/sign-in': (context) =>  CustomLoginScreen(),
         '/register': (context) => CustomRegisterScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/home' : (context) =>  HomePage(),
+        '/home' : (context) =>  UserHomePage(),
         '/admin-home' : (context) =>  AdminHomePage(),
       },
 

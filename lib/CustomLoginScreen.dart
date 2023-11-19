@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:inventory_management/CustomRegisterScreen.dart';
+import 'package:inventory_management/user_home_page.dart';
 
 class CustomLoginScreen extends StatefulWidget {
   @override
@@ -67,6 +68,10 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
       // Hash the password with SHA-256
       final hashedPassword = hashPassword(_passwordController.text);
 
+
+      print("Email :"+base64Email);
+      print("Password :"+hashedPassword);
+
       // Retrieve user data from Firestore
       QuerySnapshot userData = await FirebaseFirestore.instance.collection("user")
           .where('email', isEqualTo: base64Email)
@@ -76,12 +81,15 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
       if (userData.docs.isNotEmpty) {
         // Check the user's role
         String role = userData.docs.first['role'];
+        //String userId = userData.docs.first['user'];
+        userData.docs.first.data();
 
         // Redirect based on the user's role
         if (role == 'admin') {
           Navigator.pushReplacementNamed(context, '/admin-home');
         } else {
-          Navigator.pushReplacementNamed(context, '/home');
+          //Navigator.pushReplacementNamed(context, '/home', arguments: userData);
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => UserHomePage(userData: userData.docs.first.data())));
         }
       } else {
         // Handle the case where user data does not exist

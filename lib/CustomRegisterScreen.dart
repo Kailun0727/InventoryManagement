@@ -72,6 +72,8 @@ class _CustomRegisterScreenState extends State<CustomRegisterScreen> {
         final encrypter = encrypt.Encrypter(encrypt.AES(key));
         final encryptedEmail = encrypter.encrypt(_emailController.text, iv: iv);
 
+        print("Email :"+encryptedEmail.base64);
+        print("Password :"+hashedPassword);
 
         var uuid = Uuid();
         String randomUid = uuid.v4();
@@ -88,8 +90,7 @@ class _CustomRegisterScreenState extends State<CustomRegisterScreen> {
         await db.collection("user").doc(randomUid).set(data);
 
         // Successful registration logic
-        Navigator.pushReplacementNamed(context, '/home');
-
+        Navigator.pushReplacementNamed(context, '/sign-in');
       } catch (e) {
         // Handle registration error and display a message to the user
         ScaffoldMessenger.of(context).showSnackBar(
