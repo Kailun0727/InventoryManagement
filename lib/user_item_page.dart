@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'Item.dart';
 
 class ItemPage extends StatefulWidget {
@@ -108,7 +109,7 @@ class _ItemPageState extends State<ItemPage> {
                 // Perform the action with the entered remark
                 String remarkMessage = _remarkController.text;
                 DateTime now = DateTime.now();
-                String remarkTime = now.toLocal().toString();
+                String remarkTime = DateFormat.jm().format(now);
 
                 // Encrypt data
                 final keyValues = generateKey();

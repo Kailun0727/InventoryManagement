@@ -68,6 +68,10 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
       // Hash the password with SHA-256
       final hashedPassword = hashPassword(_passwordController.text);
 
+
+      print("Email :"+base64Email);
+      print("Password :"+hashedPassword);
+
       // Retrieve user data from Firestore
       QuerySnapshot userData = await FirebaseFirestore.instance.collection("user")
           .where('email', isEqualTo: base64Email)

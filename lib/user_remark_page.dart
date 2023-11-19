@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 class RemarkPage extends StatefulWidget {
   final Object? userData;
@@ -24,6 +25,86 @@ class _RemarkPageState extends State<RemarkPage> {
 
   Uint8List generateKey() {
     return Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
+  }
+
+  String _getUserEmail(Object? userData) {
+    if (userData != null && userData is Map<String, dynamic>) {
+      // Assuming 'email' is the key for the user email in userData
+      return userData['email'] ?? 'DEFAULT_EMAIL';
+    }
+    return 'DEFAULT_EMAIL';
+  }
+
+  void _deleteRemark(String remarkId) async {
+    await remarkCollection.doc(remarkId).delete();
+    Navigator.of(context).pop(); // Close the dialog
+  }
+
+  void _editRemark(BuildContext context, String remarkId, String currentRemark) {
+    TextEditingController _editedRemarkController = TextEditingController(text: _extractMessage(currentRemark));
+
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Edit Remark'),
+          content: TextField(
+            controller: _editedRemarkController,
+            decoration: InputDecoration(labelText: 'Enter your edited remark'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                _deleteRemark(remarkId);
+              },
+              child: Text('Delete'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Perform the action with the edited remark
+                String editedRemarkMessage = _editedRemarkController.text;
+
+                // Encrypt data
+                final keyValues = generateKey();
+                final key = encrypt.Key(keyValues);
+                final iv = encrypt.IV.fromLength(16);
+                final encrypter = encrypt.Encrypter(encrypt.AES(key));
+
+                final encryptedEditedRemarkMessage = encrypter.encrypt(editedRemarkMessage, iv: iv);
+                final encryptedEditedRemarkTime = encrypter.encrypt(DateFormat.jm().format(DateTime.now()), iv: iv);
+
+
+                // Save the edited remark to Firebase
+                await remarkCollection.doc(remarkId).update({
+                  'remarkMessage': encryptedEditedRemarkMessage.base64,
+                  'remarkTime': encryptedEditedRemarkTime.base64,
+                });
+
+                // Close the dialog
+                Navigator.of(context).pop();
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
+  String _extractMessage(String currentRemark) {
+    // Extract the message from the formatted remark string
+    int messageIndex = currentRemark.indexOf('Message:');
+    int timeIndex = currentRemark.indexOf('Time:');
+    return currentRemark.substring(messageIndex + 'Message:'.length, timeIndex).trim();
   }
 
   @override
@@ -91,70 +172,4 @@ class _RemarkPageState extends State<RemarkPage> {
       ),
     );
   }
-
-  String _getUserEmail(Object? userData) {
-    if (userData != null && userData is Map<String, dynamic>) {
-      // Assuming 'email' is the key for the user email in userData
-      return userData['email'] ?? 'DEFAULT_EMAIL';
-    }
-    return 'DEFAULT_EMAIL';
-  }
-
-  void _editRemark(BuildContext context, String remarkId, String currentRemark) {
-    TextEditingController _editedRemarkController = TextEditingController(text: _extractMessage(currentRemark));
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Edit Remark'),
-          content: TextField(
-            controller: _editedRemarkController,
-            decoration: InputDecoration(labelText: 'Enter your edited remark'),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                // Perform the action with the edited remark
-                String editedRemarkMessage = _editedRemarkController.text;
-
-                // Encrypt data
-                final keyValues = generateKey();
-                final key = encrypt.Key(keyValues);
-                final iv = encrypt.IV.fromLength(16);
-                final encrypter = encrypt.Encrypter(encrypt.AES(key));
-
-                final encryptedEditedRemarkMessage = encrypter.encrypt(editedRemarkMessage, iv: iv);
-
-                // Save the edited remark to Firebase
-                await remarkCollection.doc(remarkId).update({
-                  'remarkMessage': encryptedEditedRemarkMessage.base64,
-                  'remarkTime': encrypter.encrypt(DateTime.now().toLocal().toString(), iv: iv).base64,
-                });
-
-                // Close the dialog
-                Navigator.of(context).pop();
-              },
-              child: Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  String _extractMessage(String currentRemark) {
-    // Extract the message from the formatted remark string
-    int messageIndex = currentRemark.indexOf('Message:');
-    int timeIndex = currentRemark.indexOf('Time:');
-    return currentRemark.substring(messageIndex + 'Message:'.length, timeIndex).trim();
-  }
-
-
 }
